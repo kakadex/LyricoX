@@ -364,7 +364,7 @@ val appModule = module {
     viewModel { BatchLyricsFormatViewModel(get(), get(), get(), get()) }
     viewModel { (taskId: String) -> BatchTaskDetailViewModel(taskId, get(), get()) }
     viewModel { BatchTaskListViewModel(get(), get(), get()) }
-    viewModel { DuplicateScanViewModel(get(), get()) }
+    viewModel { DuplicateScanViewModel(get(), get(), get()) }
     viewModel { FileNameCleanupViewModel(get(), get()) }
     viewModel { OrganizeViewModel(get(), get(), get()) }
 }

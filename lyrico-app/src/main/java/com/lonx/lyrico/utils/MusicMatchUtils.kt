@@ -120,7 +120,7 @@ object MusicMatchUtils {
         return if (totalChars == 0) 1.0 else (2.0 * commonCount / totalChars).coerceIn(0.0, 1.0)
     }
 
-    private fun containsSimilarity(a: String, b: String): Double {
+    fun containsSimilarity(a: String, b: String): Double {
         if (a.isEmpty() || b.isEmpty()) return 0.0
         if (a == b) return 1.0
 

@@ -1,8 +1,10 @@
 package com.lonx.lyrico.viewmodel
 
 import android.content.IntentSender
+import android.os.ParcelFileDescriptor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lonx.lyrico.data.song.file.AudioFileAccess
 import com.lonx.lyrico.data.song.library.SongLibraryRepository
 import com.lonx.lyrico.domain.song.usecase.DeleteSongsUseCase
 import com.lonx.lyrico.utils.DuplicateDetector
@@ -16,6 +18,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.nio.ByteBuffer
+import java.security.MessageDigest
+import kotlin.math.min
 
 data class DuplicateScanUiState(
     val scanning: Boolean = false,
@@ -31,7 +36,8 @@ data class DuplicateScanUiState(
 
 class DuplicateScanViewModel(
     private val songLibraryRepository: SongLibraryRepository,
-    private val deleteSongsUseCase: DeleteSongsUseCase
+    private val deleteSongsUseCase: DeleteSongsUseCase,
+    private val audioFileAccess: AudioFileAccess
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DuplicateScanUiState())
@@ -54,14 +60,19 @@ class DuplicateScanViewModel(
                         id = song.uri,
                         fileName = song.fileName,
                         size = song.fileSize,
-                        relativePath = song.filePath
+                        relativePath = song.filePath,
+                        durationMs = song.durationMilliseconds.toLong(),
+                        tagArtist = song.artist.orEmpty()
                     )
                 }
-                val groups = DuplicateDetector.detect(items)
+                val groups = DuplicateDetector.detect(items, contentSampler = ::contentFingerprint)
                 val selected = HashSet<String>()
                 for (group in groups) {
                     val keep = DuplicateDetector.recommendKeep(group)
-                    group.files.forEachIndexed { i, f -> if (i != keep) selected.add(f.id) }
+                    group.files.forEachIndexed { i, f ->
+                        // 疑似组默认不勾：查重是提示，误删不可逆，让用户核对后再动手
+                        if (i != keep && !group.suspect) selected.add(f.id)
+                    }
                 }
                 groups to selected
             }
@@ -133,5 +144,40 @@ class DuplicateScanViewModel(
         // 刷新分组但保留用户勾选：已删掉的文件不再成组、勾选自然掉出；
         // 删除失败的（文件仍在）保留勾选，用户可直接重试
         scan(resetSelection = false)
+    }
+
+    /** 疑似组的内容采样指纹：大小 + 头 64KB + 尾 64KB 的 SHA-256（取不到返回空串）。 */
+    private fun contentFingerprint(item: DuplicateItem): String {
+        val size = item.size
+        if (size <= 0) return ""
+        val pfd = audioFileAccess.openReadableDescriptor(item.id) ?: return ""
+        return pfd.use {
+            try {
+                val channel = ParcelFileDescriptor.AutoCloseInputStream(pfd).channel
+                val digest = MessageDigest.getInstance("SHA-256")
+                digest.update(ByteBuffer.allocate(8).putLong(size).array())
+                val head = ByteBuffer.allocate(min(SAMPLE_BYTES.toLong(), size).toInt())
+                while (head.hasRemaining()) {
+                    if (channel.read(head) < 0) return@use ""
+                }
+                digest.update(head.array())
+                // 头尾采样不重叠才比尾段：小文件头段已足够区分
+                if (size > 2L * SAMPLE_BYTES) {
+                    channel.position(size - SAMPLE_BYTES)
+                    val tail = ByteBuffer.allocate(SAMPLE_BYTES)
+                    while (tail.hasRemaining()) {
+                        if (channel.read(tail) < 0) return@use ""
+                    }
+                    digest.update(tail.array())
+                }
+                digest.digest().joinToString("") { "%02x".format(it) }
+            } catch (t: Throwable) {
+                ""
+            }
+        }
+    }
+
+    private companion object {
+        const val SAMPLE_BYTES = 64 * 1024
     }
 }

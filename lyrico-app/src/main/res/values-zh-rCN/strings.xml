@@ -868,6 +868,8 @@
     <string name="duplicate_scan_keep">建议保留</string>
     <string name="duplicate_scan_delete_count">删除 %1$d 个文件</string>
     <string name="duplicate_scan_delete_title">删除重复文件？</string>
+    <string name="duplicate_scan_suspect">疑似</string>
+    <string name="duplicate_scan_suspect_hint">疑似同一首歌的不同命名或不同版本，默认未勾选，请核对后再删。</string>
     <string name="filename_cleanup_title">文件名清理</string>
     <string name="filename_cleanup_entry_summary">批量去除文件名里的广告前缀、序号和多余空格</string>
     <string name="filename_cleanup_no_pending">没有需要清理的文件名</string>

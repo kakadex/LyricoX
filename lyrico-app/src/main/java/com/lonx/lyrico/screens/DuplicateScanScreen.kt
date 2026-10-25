@@ -45,6 +45,7 @@ import com.lonx.lyrico.ui.components.salt.SaltConfirmDialog
 import com.lonx.lyrico.ui.components.salt.SaltIconButton
 import com.lonx.lyrico.ui.components.scaffoldTopHorizontalPadding
 import com.lonx.lyrico.ui.theme.LocalUiEngine
+import com.lonx.lyrico.utils.DuplicateDetector
 import com.lonx.lyrico.utils.DuplicateGroup
 import com.lonx.lyrico.utils.DuplicateItem
 import com.lonx.lyrico.viewmodel.DuplicateScanUiState
@@ -268,6 +269,7 @@ private fun DuplicateGroupCard(
     if (salt) {
         com.moriafly.salt.ui.Card(modifier = Modifier.padding(horizontal = 12.dp)) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                DuplicateGroupHeader(group = group, salt = true)
                 group.files.forEachIndexed { i, item ->
                     DuplicateFileRow(
                         item = item,
@@ -284,6 +286,7 @@ private fun DuplicateGroupCard(
 
     Card(modifier = Modifier.padding(horizontal = 12.dp)) {
         Column {
+            DuplicateGroupHeader(group = group, salt = false)
             group.files.forEachIndexed { i, item ->
                 DuplicateFileRow(
                     item = item,
@@ -292,6 +295,75 @@ private fun DuplicateGroupCard(
                     salt = false,
                     onToggle = { onToggle(item.id) }
                 )
+            }
+        }
+    }
+}
+
+/** 组头部：文件数与相似度、疑似标记与提示、时长对比、内容采样核验结果。 */
+@Composable
+private fun DuplicateGroupHeader(group: DuplicateGroup, salt: Boolean) {
+    val suspectLabel = stringResource(R.string.duplicate_scan_suspect)
+    val suspectHint = stringResource(R.string.duplicate_scan_suspect_hint)
+    val percent = kotlin.math.round(group.score * 100).toInt()
+    val head = "${group.files.size} 个文件 · 相似度 $percent%" +
+        (if (group.suspect) " · $suspectLabel" else "")
+    val durations = DuplicateDetector.durationSummary(group)
+    val content = DuplicateDetector.contentLabel(group)
+    if (salt) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            com.moriafly.salt.ui.Text(
+                text = head,
+                style = SaltTheme.textStyles.main,
+                color = SaltTheme.colors.text
+            )
+            if (group.suspect) {
+                com.moriafly.salt.ui.Text(
+                    text = suspectHint,
+                    style = SaltTheme.textStyles.sub,
+                    color = SaltTheme.colors.subText
+                )
+            }
+            if (durations.isNotEmpty()) {
+                com.moriafly.salt.ui.Text(
+                    text = durations,
+                    style = SaltTheme.textStyles.sub,
+                    color = SaltTheme.colors.subText
+                )
+            }
+            if (content.isNotEmpty()) {
+                com.moriafly.salt.ui.Text(
+                    text = content,
+                    style = SaltTheme.textStyles.sub,
+                    color = if (group.content == DuplicateDetector.CONTENT_DIFF) {
+                        SaltTheme.colors.highlight
+                    } else {
+                        SaltTheme.colors.subText
+                    }
+                )
+            }
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = head,
+                style = MiuixTheme.textStyles.main,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (group.suspect) {
+                Text(
+                    text = suspectHint,
+                    style = MiuixTheme.textStyles.footnote1,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (durations.isNotEmpty()) {
+                Text(text = durations, style = MiuixTheme.textStyles.footnote1)
+            }
+            if (content.isNotEmpty()) {
+                Text(text = content, style = MiuixTheme.textStyles.footnote1)
             }
         }
     }
