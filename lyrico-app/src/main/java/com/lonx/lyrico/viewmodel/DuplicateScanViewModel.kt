@@ -1,5 +1,6 @@
 package com.lonx.lyrico.viewmodel
 
+import android.content.IntentSender
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lonx.lyrico.data.song.library.SongLibraryRepository
@@ -21,7 +22,9 @@ data class DuplicateScanUiState(
     val scannedCount: Int = 0,
     val groups: List<DuplicateGroup> = emptyList(),
     val selectedForDeletion: Set<String> = emptySet(),
-    val deleting: Boolean = false
+    val deleting: Boolean = false,
+    /** 非 null 时表示正在等用户在系统删除确认框里点头，确认/拒绝见 [DuplicateScanViewModel.onPermissionResult] */
+    val permissionIntentSender: IntentSender? = null
 ) {
     val selectedCount: Int get() = selectedForDeletion.size
 }
@@ -76,17 +79,46 @@ class DuplicateScanViewModel(
         }
     }
 
-    /** 删除所有勾选的重复文件，成功后重新扫描刷新分组。 */
+    /** 删除所有勾选的重复文件；需要系统授权时先弹确认框，用户确认后再收尾。 */
     fun deleteSelected() {
-        if (_uiState.value.deleting) return
+        if (_uiState.value.deleting || _uiState.value.permissionIntentSender != null) return
         viewModelScope.launch {
             val ids = _uiState.value.selectedForDeletion
             if (ids.isEmpty()) return@launch
-            _uiState.update { it.copy(deleting = true) }
-            val songs = songLibraryRepository.getSongsByUris(ids.toList())
-            deleteSongsUseCase(songs)
-            _uiState.update { it.copy(deleting = false, selectedForDeletion = emptySet()) }
-            scan()
+            runDeletion(ids)
         }
+    }
+
+    /**
+     * 系统删除确认框的回执：同意 → 重跑一遍删除（已由系统删掉的走「已不存在」，
+     * 顺带清掉库表记录）；拒绝 → 关掉弹窗状态，保留勾选等用户重试。
+     */
+    fun onPermissionResult(granted: Boolean) {
+        if (!granted) {
+            _uiState.update { it.copy(permissionIntentSender = null) }
+            return
+        }
+        viewModelScope.launch {
+            val ids = _uiState.value.selectedForDeletion
+            if (ids.isEmpty()) {
+                _uiState.update { it.copy(permissionIntentSender = null) }
+                return@launch
+            }
+            runDeletion(ids)
+        }
+    }
+
+    private suspend fun runDeletion(ids: Set<String>) {
+        _uiState.update { it.copy(deleting = true, permissionIntentSender = null) }
+        val songs = songLibraryRepository.getSongsByUris(ids.toList())
+        val result = deleteSongsUseCase(songs)
+        result.permissionRequired?.let { sender ->
+            // Android 10+ 删除非本应用写入的文件要用户在系统弹窗里确认；
+            // 保留勾选，等授权结果回来再继续（见 onPermissionResult）
+            _uiState.update { it.copy(deleting = false, permissionIntentSender = sender) }
+            return
+        }
+        _uiState.update { it.copy(deleting = false, selectedForDeletion = emptySet()) }
+        scan()
     }
 }

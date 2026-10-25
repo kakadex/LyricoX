@@ -44,12 +44,24 @@ class DeleteSongsUseCase(
             libraryIndexRepository.refreshAndPruneIndexes()
         }
 
+        // 有文件需要系统授权时，优先给「一次弹窗覆盖整批」的 sender（R+ 的
+        // createDeleteRequest）；拿不到再退回逐条结果里第一个 PermissionRequired
+        val needPermission = fileResult.items.any {
+            it.result is DeleteSongFileResult.PermissionRequired
+        }
+        val batchSender = if (needPermission) {
+            songFileRepository.createBatchDeleteIntentSender(songs)
+        } else {
+            null
+        }
+
         return DeleteSongsResult(
             total = songs.size,
             deleted = deletableSongs.size,
             items = fileResult.items.map { item ->
                 DeleteSongsItemResult(item.song, item.result)
-            }
+            },
+            batchPermissionSender = batchSender
         )
     }
 
@@ -61,12 +73,14 @@ class DeleteSongsUseCase(
 data class DeleteSongsResult(
     val total: Int,
     val deleted: Int,
-    val items: List<DeleteSongsItemResult>
+    val items: List<DeleteSongsItemResult>,
+    val batchPermissionSender: IntentSender? = null
 ) {
     val permissionRequired: IntentSender?
-        get() = items.firstNotNullOfOrNull { item ->
-            (item.result as? DeleteSongFileResult.PermissionRequired)?.intentSender
-        }
+        get() = batchPermissionSender
+            ?: items.firstNotNullOfOrNull { item ->
+                (item.result as? DeleteSongFileResult.PermissionRequired)?.intentSender
+            }
 }
 
 data class DeleteSongsItemResult(

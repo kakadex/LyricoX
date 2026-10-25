@@ -2,7 +2,9 @@ package com.lonx.lyrico.data.song.file
 
 import android.app.RecoverableSecurityException
 import android.content.Context
+import android.content.IntentSender
 import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
 import androidx.core.net.toUri
 import com.lonx.lyrico.data.model.entity.SongEntity
@@ -34,6 +36,29 @@ class SongFileRepositoryImpl(
             }
         )
     }
+
+    override suspend fun createBatchDeleteIntentSender(songs: List<SongEntity>): IntentSender? =
+        withContext(Dispatchers.IO) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                return@withContext null
+            }
+            val uris = songs.asSequence()
+                .filter { it.source != "SAF" }
+                .mapNotNull { song ->
+                    runCatching { song.uri.toUri() }.getOrNull()
+                        ?.takeIf { it.scheme == "content" }
+                }
+                .toCollection(ArrayList())
+            if (uris.isEmpty()) {
+                return@withContext null
+            }
+            try {
+                MediaStore.createDeleteRequest(context.contentResolver, uris).intentSender
+            } catch (e: Exception) {
+                Log.w(TAG, "createDeleteRequest failed for ${uris.size} item(s)", e)
+                null
+            }
+        }
 
     override suspend fun renameFile(
         song: SongEntity,

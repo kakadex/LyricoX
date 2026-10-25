@@ -2,7 +2,11 @@
 
 package com.lonx.lyrico.screens
 
+import android.app.Activity
 import android.text.format.Formatter
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -82,7 +86,19 @@ fun DuplicateScanScreen(
     val salt = LocalUiEngine.current == UiEngine.SALT
     var showConfirm by remember { mutableStateOf(false) }
 
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        viewModel.onPermissionResult(result.resultCode == Activity.RESULT_OK)
+    }
+
     LaunchedEffect(Unit) { viewModel.scan() }
+
+    LaunchedEffect(state.permissionIntentSender) {
+        state.permissionIntentSender?.let { sender ->
+            permissionLauncher.launch(IntentSenderRequest.Builder(sender).build())
+        }
+    }
 
     if (showConfirm) {
         if (salt) {
