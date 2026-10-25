@@ -1,0 +1,4 @@
+LyricoX v0.09.7  (versionCode 40)
+构建时间: 2026-10-25 13:41:27
+代码版本: LyricoX @ 339b209
+Lyrico-0.09.7-339b209-arm64-v8a.apk: 1149d04618cad45269153ff905fe852947a473dbc9a7d09856dce61b8c719e29
