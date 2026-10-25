@@ -71,6 +71,7 @@ import com.lonx.lyrico.ui.components.base.PillButtonSize
 import com.lonx.lyrico.ui.components.salt.SaltIconButton
 import com.lonx.lyrico.ui.components.library.EmptyStateKind
 import com.lonx.lyrico.ui.components.library.IllustratedEmptyState
+import com.lonx.lyrico.ui.components.DeletePermissionHost
 import com.lonx.lyrico.ui.components.library.LibraryDetailPage
 import com.lonx.lyrico.ui.components.library.LibraryDetailTabs
 import com.lonx.lyrico.ui.theme.LocalUiEngine
@@ -127,6 +128,7 @@ fun FolderManagerScreen(
 ) {
     val viewModel: FolderManagerViewModel = koinViewModel()
     val selectionViewModel: SongSelectionViewModel = koinViewModel()
+    DeletePermissionHost(selectionViewModel.deletePermissionSender, selectionViewModel::onPermissionResult)
 
     val uiState by viewModel.uiState.collectAsState()
     val sortInfo by viewModel.sortInfo.collectAsState()

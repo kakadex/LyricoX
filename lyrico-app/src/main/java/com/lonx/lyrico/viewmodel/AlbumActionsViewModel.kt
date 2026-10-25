@@ -2,6 +2,7 @@ package com.lonx.lyrico.viewmodel
 
 import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -52,6 +53,13 @@ class AlbumActionsViewModel(
     private val _events = MutableSharedFlow<UiMessage>()
     val events: SharedFlow<UiMessage> = _events.asSharedFlow()
 
+    /** 非 null 时正在等用户在系统删除确认框里操作，回执见 [onPermissionResult] */
+    private val _deletePermissionSender = MutableStateFlow<IntentSender?>(null)
+    val deletePermissionSender: StateFlow<IntentSender?> = _deletePermissionSender.asStateFlow()
+
+    private var pendingDeletion: List<SongEntity> = emptyList()
+    private var deleteJob: Job? = null
+
     private var replayGainJob: Job? = null
     private var replayGainStartedAt: Long = 0L
 
@@ -86,8 +94,19 @@ class AlbumActionsViewModel(
     }
 
     fun deleteAlbum(songs: List<SongEntity>) {
-        viewModelScope.launch {
+        if (songs.isEmpty()) return
+        if (deleteJob?.isActive == true) return
+        deleteJob = viewModelScope.launch {
+            _deletePermissionSender.value = null
             val result = deleteSongsUseCase(songs)
+            result.permissionRequired?.let { sender ->
+                // Android 10+ 删除非本应用写入的文件要用户在系统弹窗里确认：
+                // 保留清单，等回执（见 onPermissionResult）
+                pendingDeletion = songs
+                _deletePermissionSender.value = sender
+                return@launch
+            }
+            pendingDeletion = emptyList()
             _events.emit(
                 UiMessage.StringResource(
                     R.string.album_delete_success,
@@ -96,6 +115,20 @@ class AlbumActionsViewModel(
                 )
             )
         }
+    }
+
+    /**
+     * 系统删除确认框的回执：同意 → 重跑一遍删除（已由系统删掉的走「已不存在」，
+     * 顺带清库表）；拒绝 → 清掉弹窗状态，保持现状可重试。
+     */
+    fun onPermissionResult(granted: Boolean) {
+        if (!granted) {
+            pendingDeletion = emptyList()
+            _deletePermissionSender.value = null
+            return
+        }
+        val songs = pendingDeletion
+        if (songs.isNotEmpty()) deleteAlbum(songs)
     }
 
     fun calculateAlbumReplayGain(albumId: Long) {

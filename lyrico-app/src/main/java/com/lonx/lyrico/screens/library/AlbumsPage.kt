@@ -33,6 +33,7 @@ import com.lonx.lyrico.R
 import com.lonx.lyrico.data.model.AlbumSortBy
 import com.lonx.lyrico.data.model.AlbumSortInfo
 import com.lonx.lyrico.data.model.entity.AlbumEntity
+import com.lonx.lyrico.ui.components.DeletePermissionHost
 import com.lonx.lyrico.ui.components.bar.AlphabetSideBar
 import com.lonx.lyrico.ui.components.bar.rememberAlphabetSideBarScrollController
 import com.lonx.lyrico.ui.components.base.YesNoDialog
@@ -87,6 +88,7 @@ fun AlbumsPage(
 ) {
     val viewModel: AlbumLibraryViewModel = koinViewModel()
     val albumActionsViewModel: AlbumActionsViewModel = koinViewModel()
+    DeletePermissionHost(albumActionsViewModel.deletePermissionSender, albumActionsViewModel::onPermissionResult)
     val scanState by viewModel.scanState.collectAsStateWithLifecycle()
     val albumActionsUiState by albumActionsViewModel.uiState.collectAsStateWithLifecycle()
 

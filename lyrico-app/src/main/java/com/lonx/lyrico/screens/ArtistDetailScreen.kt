@@ -51,6 +51,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lonx.audiotag.model.AudioPictureType
 import com.lonx.lyrico.ui.components.library.SelectableLibraryItem
+import com.lonx.lyrico.ui.components.DeletePermissionHost
 import com.lonx.lyrico.ui.components.library.LibraryDetailPage
 import com.lonx.lyrico.ui.components.library.LibraryDetailTabs
 import com.lonx.lyrico.ui.components.library.LibraryDetailIconButton
@@ -114,6 +115,8 @@ fun ArtistDetailScreen(
     var selectedAlbum by remember { mutableStateOf<AlbumEntity?>(null) }
     val albumActionsViewModel: AlbumActionsViewModel = koinViewModel()
     val albumActionsUiState by albumActionsViewModel.uiState.collectAsStateWithLifecycle()
+    DeletePermissionHost(selectionViewModel.deletePermissionSender, selectionViewModel::onPermissionResult)
+    DeletePermissionHost(albumActionsViewModel.deletePermissionSender, albumActionsViewModel::onPermissionResult)
 
     val artistName = artist?.name.orEmpty()
     val isSelectionMode by selectionViewModel.isSelectionMode.collectAsStateWithLifecycle()

@@ -53,6 +53,7 @@ import com.lonx.lyrico.data.model.entity.SongEntity
 import com.lonx.lyrico.data.model.UiEngine
 import com.lonx.lyrico.screens.library.LibrarySelectionState
 import com.lonx.lyrico.ui.components.library.LibraryDetailIconButton
+import com.lonx.lyrico.ui.components.DeletePermissionHost
 import com.lonx.lyrico.ui.components.library.LibraryDetailPage
 import com.lonx.lyrico.ui.components.library.LibraryDetailText
 import com.lonx.lyrico.ui.components.library.LibraryDetailTextTone
@@ -101,6 +102,8 @@ fun AlbumDetailScreen(
     )
     val selectionViewModel: SongSelectionViewModel = koinViewModel()
     val albumActionsViewModel: AlbumActionsViewModel = koinViewModel()
+    DeletePermissionHost(selectionViewModel.deletePermissionSender, selectionViewModel::onPermissionResult)
+    DeletePermissionHost(albumActionsViewModel.deletePermissionSender, albumActionsViewModel::onPermissionResult)
     val album by viewModel.album.collectAsStateWithLifecycle()
     val songs by viewModel.songs.collectAsStateWithLifecycle()
     val albumActionsUiState by albumActionsViewModel.uiState.collectAsStateWithLifecycle()

@@ -46,6 +46,7 @@ import com.lonx.lyrico.data.model.entity.SongEntity
 import com.lonx.lyrico.screens.SECTIONS_ASC
 import com.lonx.lyrico.screens.SECTIONS_DESC
 import com.lonx.lyrico.screens.TopBarState
+import com.lonx.lyrico.ui.components.DeletePermissionHost
 import com.lonx.lyrico.ui.components.bar.AlphabetSideBar
 import com.lonx.lyrico.ui.components.bar.SongSelectionTopAppBar
 import com.lonx.lyrico.ui.components.bar.rememberAlphabetSideBarScrollController
@@ -101,6 +102,7 @@ fun SongsPage(
 ) {
     val viewModel: SongListViewModel = koinActivityViewModel()
     val selectionViewModel: SongSelectionViewModel = koinViewModel()
+    DeletePermissionHost(selectionViewModel.deletePermissionSender, selectionViewModel::onPermissionResult)
     val scanState by viewModel.scanState.collectAsStateWithLifecycle()
 
     val sortInfo by viewModel.sortInfo.collectAsState()

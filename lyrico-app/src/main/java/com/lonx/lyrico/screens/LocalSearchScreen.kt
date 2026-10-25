@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lonx.lyrico.ui.components.DeletePermissionHost
 import com.lonx.lyrico.ui.components.library.LibraryDetailPage
 import com.lonx.lyrico.ui.components.library.SelectableLibraryItem
 import com.lonx.lyrico.screens.library.LibrarySelectionState
@@ -111,6 +112,7 @@ fun LocalSearchScreen(
 ) {
     val viewModel: LocalSearchViewModel = koinViewModel()
     val selectionViewModel: SongSelectionViewModel = koinViewModel()
+    DeletePermissionHost(selectionViewModel.deletePermissionSender, selectionViewModel::onPermissionResult)
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lyricSearchEnabled by viewModel.lyricSearchEnabled.collectAsStateWithLifecycle()

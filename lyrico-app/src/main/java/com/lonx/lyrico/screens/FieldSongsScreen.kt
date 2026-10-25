@@ -47,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lonx.lyrico.data.model.UiEngine
+import com.lonx.lyrico.ui.components.DeletePermissionHost
 import com.lonx.lyrico.ui.components.library.LibraryDetailPage
 import com.lonx.lyrico.ui.components.library.LibraryDetailTabs
 import com.lonx.lyrico.screens.library.LibrarySelectionState
@@ -101,6 +102,7 @@ fun FieldSongsScreen(
 ) {
     val viewModel: FieldSongsViewModel = koinViewModel(parameters = { parametersOf(fieldCode, component) })
     val selectionViewModel: SongSelectionViewModel = koinViewModel()
+    DeletePermissionHost(selectionViewModel.deletePermissionSender, selectionViewModel::onPermissionResult)
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isSelectionMode by selectionViewModel.isSelectionMode.collectAsStateWithLifecycle()
     val selectedSongUris by selectionViewModel.selectedSongUris.collectAsStateWithLifecycle()

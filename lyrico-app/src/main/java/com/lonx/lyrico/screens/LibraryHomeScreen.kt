@@ -27,6 +27,7 @@ import com.lonx.lyrico.screens.library.ArtistsPage
 import com.lonx.lyrico.screens.library.LibraryHomePresentation
 import com.lonx.lyrico.screens.library.LibraryTab
 import com.lonx.lyrico.screens.library.SongsPage
+import com.lonx.lyrico.ui.components.DeletePermissionHost
 import com.lonx.lyrico.ui.components.artist.ArtistBatchSelectionActions
 import com.lonx.lyrico.ui.components.bar.SongBatchSelectionActions
 import com.lonx.lyrico.ui.components.blur.rememberBarBlurEnabled
@@ -60,6 +61,7 @@ fun LibraryHomeScreen(navigator: DestinationsNavigator) {
     val scope = rememberCoroutineScope()
     val viewModel: SongListViewModel = koinActivityViewModel()
     val selectionViewModel: SongSelectionViewModel = koinViewModel()
+    DeletePermissionHost(selectionViewModel.deletePermissionSender, selectionViewModel::onPermissionResult)
     val artistSelectionViewModel: com.lonx.lyrico.viewmodel.ArtistSelectionViewModel =
         koinViewModel()
     val artistEditor: com.lonx.lyrico.viewmodel.ArtistPosterEditViewModel = koinViewModel()
