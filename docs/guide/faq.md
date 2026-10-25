@@ -104,7 +104,7 @@ Lyrico 是一个标签编辑工具，不是音乐播放器。点击歌曲的默�
 
 ### 如何获取更多插件？
 
-官方插件仓库：[Lyrico-Plugins](https://github.com/Replica0110/Lyrico-Plugins)，覆盖 QQ 音乐、网易云音乐、酷狗音乐、Apple Music 等平台。
+原版插件仓库：[Lyrico-Plugins](https://github.com/Replica0110/Lyrico-Plugins)，覆盖 QQ 音乐、网易云音乐、酷狗音乐、Apple Music 等平台。
 
 ## 批量操作
 

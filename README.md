@@ -7,7 +7,7 @@
 > ## Fork 声明
 >
 > 本仓库是 [Replica0110/Lyrico](https://github.com/Replica0110/Lyrico) 的**第三方 fork**，
-> 由 [kakadex](https://github.com/kakadex) 维护，**不是官方版本**。
+> 由 [kakadex](https://github.com/kakadex) 维护，是独立的 fork 版本。
 >
 > - 与上游项目及原作者无隶属关系，未获其背书，也不代表上游立场
 > - 版权归原作者所有，遵循 [Apache-2.0](./LICENSE)；本 fork 的修改同样以 Apache-2.0 发布

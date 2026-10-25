@@ -14,7 +14,7 @@ Lyrico 本身不提供在线搜索能力。歌词搜索、封面搜索和歌曲�
 
 ## 获取插件
 
-官方维护的插件可在 [Lyrico-Plugins](https://github.com/Replica0110/Lyrico-Plugins) 下载，覆盖 QQ 音乐、网易云音乐、酷狗音乐、Apple Music 等平台。
+原版维护的插件可在 [Lyrico-Plugins](https://github.com/Replica0110/Lyrico-Plugins) 下载，覆盖 QQ 音乐、网易云音乐、酷狗音乐、Apple Music 等平台。
 
 插件通常以 **ZIP 压缩包** 形式分发。一个 ZIP 中可能包含多个插件。
 
