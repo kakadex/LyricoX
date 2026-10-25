@@ -22,9 +22,13 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 import kotlin.math.min
 
+/** 查重模式：按文件名（相似度分组）或按内容（同大小 + 采样指纹一致）。 */
+enum class DuplicateScanMode { FILENAME, CONTENT }
+
 data class DuplicateScanUiState(
     val scanning: Boolean = false,
     val scannedCount: Int = 0,
+    val mode: DuplicateScanMode = DuplicateScanMode.FILENAME,
     val groups: List<DuplicateGroup> = emptyList(),
     val selectedForDeletion: Set<String> = emptySet(),
     val deleting: Boolean = false,
@@ -43,6 +47,13 @@ class DuplicateScanViewModel(
     private val _uiState = MutableStateFlow(DuplicateScanUiState())
     val uiState: StateFlow<DuplicateScanUiState> = _uiState.asStateFlow()
 
+    /** 切换查重模式并立即重扫（重置为该模式下的默认勾选）。 */
+    fun setMode(mode: DuplicateScanMode) {
+        if (_uiState.value.mode == mode || _uiState.value.scanning) return
+        _uiState.update { it.copy(mode = mode) }
+        scan()
+    }
+
     /**
      * 扫描整个曲库，按文件名找出重复分组，默认勾选「除建议保留外的所有重复项」。
      *
@@ -54,6 +65,7 @@ class DuplicateScanViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(scanning = true) }
             val songs = songLibraryRepository.observeSongs(SortBy.TITLE, SortOrder.ASC, null).first()
+            val mode = _uiState.value.mode
             val (groups, selected) = withContext(Dispatchers.Default) {
                 val items = songs.map { song ->
                     DuplicateItem(
@@ -65,16 +77,34 @@ class DuplicateScanViewModel(
                         tagArtist = song.artist.orEmpty()
                     )
                 }
-                val groups = DuplicateDetector.detect(items, contentSampler = ::contentFingerprint)
-                val selected = HashSet<String>()
-                for (group in groups) {
-                    val keep = DuplicateDetector.recommendKeep(group)
-                    group.files.forEachIndexed { i, f ->
-                        // 疑似组默认不勾：查重是提示，误删不可逆，让用户核对后再动手
-                        if (i != keep && !group.suspect) selected.add(f.id)
+                val detectedGroups: List<DuplicateGroup>
+                val defaultSelected = HashSet<String>()
+                when (mode) {
+                    DuplicateScanMode.FILENAME -> {
+                        detectedGroups = DuplicateDetector.detect(items, contentSampler = ::contentFingerprint)
+                        for (group in detectedGroups) {
+                            val keep = DuplicateDetector.recommendKeep(group)
+                            group.files.forEachIndexed { i, f ->
+                                // 疑似组默认不勾：查重是提示，误删不可逆，让用户核对后再动手
+                                if (i != keep && !group.suspect) defaultSelected.add(f.id)
+                            }
+                        }
+                    }
+                    DuplicateScanMode.CONTENT -> {
+                        // 指纹缓存：同一次扫描里同一首只读一次文件
+                        val fingerprints = HashMap<String, String>()
+                        detectedGroups = DuplicateDetector.detectByContent(items) { item ->
+                            fingerprints.getOrPut(item.id) { contentFingerprint(item) }
+                        }
+                        for (group in detectedGroups) {
+                            val keep = DuplicateDetector.recommendKeep(group)
+                            group.files.forEachIndexed { i, f ->
+                                if (i != keep) defaultSelected.add(f.id)
+                            }
+                        }
                     }
                 }
-                groups to selected
+                detectedGroups to defaultSelected
             }
             _uiState.update { state ->
                 state.copy(

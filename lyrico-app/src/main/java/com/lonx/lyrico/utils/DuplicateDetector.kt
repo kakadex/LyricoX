@@ -356,6 +356,49 @@ object DuplicateDetector {
         return out
     }
 
+    /**
+     * 按内容查重：同大小分桶（几乎不花 IO）后只对同大小条目取采样指纹，
+     * 指纹（大小 + 头尾采样）完全一致才算同一份。
+     *
+     * [fingerprintOf] 由调用方提供并自行缓存；返回空串表示取不到（跳过该条目）。
+     * 内容一致即为确证：组不标疑似，content 置 CONTENT_SAME。
+     */
+    fun detectByContent(
+        items: List<DuplicateItem>,
+        fingerprintOf: (DuplicateItem) -> String
+    ): List<DuplicateGroup> {
+        val bySize = HashMap<Long, MutableList<DuplicateItem>>()
+        for (item in items) {
+            if (item.size > 0) bySize.getOrPut(item.size) { mutableListOf() }.add(item)
+        }
+        val byFingerprint = HashMap<String, MutableList<DuplicateItem>>()
+        for ((_, bucket) in bySize) {
+            if (bucket.size < 2) continue
+            for (item in bucket) {
+                val fingerprint = try {
+                    fingerprintOf(item)
+                } catch (ignored: Exception) {
+                    ""
+                }
+                if (fingerprint.isEmpty()) continue
+                byFingerprint.getOrPut(fingerprint) { mutableListOf() }.add(item)
+            }
+        }
+        val out = byFingerprint.values.filter { it.size >= 2 }.map { files ->
+            val group = DuplicateGroup(key = files.first().id)
+            group.files.addAll(files)
+            group.score = 1.0
+            group.content = CONTENT_SAME
+            group
+        }.toMutableList()
+        out.sortWith(
+            compareByDescending<DuplicateGroup> { it.files.size }
+                .thenByDescending { it.wastedBytes }
+                .thenBy { it.key }
+        )
+        return out
+    }
+
     /** 组内最高相似度（两两比较，组一般只有两三个文件，代价可忽略）。 */
     private fun groupScore(group: DuplicateGroup): Double {
         var best = 0.0

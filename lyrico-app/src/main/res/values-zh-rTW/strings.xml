@@ -870,6 +870,12 @@
     <string name="duplicate_scan_delete_title">刪除重複檔案？</string>
     <string name="duplicate_scan_suspect">疑似</string>
     <string name="duplicate_scan_suspect_hint">疑似同一首歌的不同命名或不同版本，預設未勾選，請核對後再刪。</string>
+    <string name="duplicate_scan_mode_filename">按檔名</string>
+    <string name="duplicate_scan_mode_content">按內容</string>
+    <string name="songs_filter_all">全部</string>
+    <string name="songs_filter_no_lyrics">無歌詞</string>
+    <string name="songs_filter_no_tags">無標籤</string>
+    <string name="batch_match_config_timeout_scale">網路逾時倍率</string>
     <string name="filename_cleanup_title">檔名清理</string>
     <string name="filename_cleanup_entry_summary">批次去除檔名裡的廣告前綴、序號和多餘空格</string>
     <string name="filename_cleanup_no_pending">沒有需要清理的檔名</string>

@@ -64,6 +64,7 @@ import com.lonx.lyrico.plugin.source.ScriptSearchSourceFactory
 import com.lonx.lyrico.plugin.source.SourcePluginInstaller
 import com.lonx.lyrico.plugin.runtime.HostAppInfo
 import com.lonx.lyrico.plugin.runtime.QuickJsHostApi
+import com.lonx.lyrico.plugin.runtime.NetworkTuning
 import com.lonx.lyrico.plugin.runtime.QuickJsRuntime
 import com.lonx.lyrico.utils.MediaScanner
 import com.lonx.lyrico.utils.ReplayGainScanner
@@ -177,6 +178,7 @@ val appModule = module {
                         okHttpClient = okHttpClient,
                         pluginId = plugin.id,
                         pluginStrings = strings,
+                        networkTuning = get<NetworkTuning>(),
                         cacheRootDir = File(context.cacheDir, "plugin_cache")
                     )
                 )
@@ -184,6 +186,7 @@ val appModule = module {
         )
     }
     single { SourcePluginInstaller(repository = get(), json = get(), appLogRepository = get()) }
+    single { NetworkTuning(get()) }
     single {
         PluginSearchSourceManager(
             repository = get(),

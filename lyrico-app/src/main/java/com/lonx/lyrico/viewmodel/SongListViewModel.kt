@@ -52,6 +52,18 @@ data class SongListUiState(
 )
 
 
+/** 曲库健康筛选：全部 / 无歌词 / 无标签（标题或歌手缺失都算无标签）。 */
+enum class SongHealthFilter {
+    ALL, NO_LYRICS, NO_TAGS
+}
+
+private data class SongsQuery(
+    val sort: SortInfo,
+    val query: String,
+    val type: LocalSearchType,
+    val health: SongHealthFilter
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class SongListViewModel(
     private val songLibraryRepository: SongLibraryRepository,
@@ -82,17 +94,34 @@ class SongListViewModel(
 
     private val _searchType = MutableStateFlow(LocalSearchType.ALL)
     val searchType = _searchType.asStateFlow()
+    private val _healthFilter = MutableStateFlow(SongHealthFilter.ALL)
+    val healthFilter: StateFlow<SongHealthFilter> = _healthFilter.asStateFlow()
+
+    fun onHealthFilterChange(filter: SongHealthFilter) {
+        _healthFilter.value = filter
+    }
+
     val songs: StateFlow<List<SongEntity>> = combine(
         sortInfo,
         _uiState.map { it.searchQuery }.distinctUntilChanged(),
-        searchType
-    ) { sort, query, type ->
-        Triple(sort, query, type)
-    }.flatMapLatest { (sort, query, type) ->
-        if (query.isBlank()) {
-            songLibraryRepository.observeSongs(sort.sortBy, sort.order)
+        searchType,
+        _healthFilter
+    ) { sort, query, type, health ->
+        SongsQuery(sort, query, type, health)
+    }.flatMapLatest { q ->
+        val base = if (q.query.isBlank()) {
+            songLibraryRepository.observeSongs(q.sort.sortBy, q.sort.order)
         } else {
-            songSearchRepository.searchSongs(query, type)
+            songSearchRepository.searchSongs(q.query, q.type)
+        }
+        base.map { list ->
+            when (q.health) {
+                SongHealthFilter.ALL -> list
+                SongHealthFilter.NO_LYRICS -> list.filter { it.lyrics.isNullOrBlank() }
+                SongHealthFilter.NO_TAGS -> list.filter {
+                    it.title.isNullOrBlank() || it.artist.isNullOrBlank()
+                }
+            }
         }
     }.onEach {
         _uiState.update { it.copy(isSearching = false) }

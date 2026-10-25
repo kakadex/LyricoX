@@ -38,3 +38,36 @@ internal fun ConcurrencyDropdown(
         )
     }
 }
+
+private val TIMEOUT_SCALES = listOf(0.5f, 1f, 1.5f, 2f, 3f)
+
+/** 网络超时倍率：0.5×/1×/1.5×/2×/3×，弱网调大、快网调小。 */
+@Composable
+internal fun TimeoutScaleDropdown(
+    title: String,
+    value: Float,
+    onChange: (Float) -> Unit,
+    summary: String? = null,
+) {
+    val labels = TIMEOUT_SCALES.map { "${it}×" }
+    val selectedIndex = TIMEOUT_SCALES.indexOfFirst { kotlin.math.abs(it - value) < 0.01f }.coerceAtLeast(0)
+    if (LocalUiEngine.current == UiEngine.SALT) {
+        SaltDropdownRow(
+            title = title,
+            sub = summary,
+            labels = labels,
+            selectedIndex = selectedIndex,
+            icon = LucideIcons.Parallel,
+            onSelectedIndexChange = { onChange(TIMEOUT_SCALES[it]) },
+        )
+    } else {
+        WindowDropdownPreference(
+            title = title,
+            summary = summary,
+            items = labels,
+            selectedIndex = selectedIndex,
+            startAction = { PreferenceIcon(LucideIcons.Parallel, PreferenceIconTone.Tools) },
+            onSelectedIndexChange = { onChange(TIMEOUT_SCALES[it]) },
+        )
+    }
+}

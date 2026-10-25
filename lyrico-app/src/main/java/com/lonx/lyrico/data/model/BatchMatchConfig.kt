@@ -12,6 +12,8 @@ import kotlinx.serialization.Serializable
 data class BatchMatchConfig(
     val targetModes: Map<MetadataFieldTarget, MetadataWriteMode>,
     val concurrency: Int = 3,
+    /** 网络超时倍率（0.5~3）：作用于插件源 HTTP 的连接/读取超时，弱网可调大。 */
+    val timeoutScale: Float = 1f,
     val preferFileName: Boolean = false,
     /**
      * 先匹配后确认：任务只把「匹配到什么」落库，不写盘，用户在预览页逐首逐字段勾完才真正写入。

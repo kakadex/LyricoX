@@ -33,6 +33,7 @@ import com.lonx.lyrico.data.model.metadata.MetadataFieldTarget
 import com.lonx.lyrico.data.model.metadata.MetadataWriteMode
 import com.lonx.lyrico.ui.components.base.YesNoBottomSheet
 import com.lonx.lyrico.ui.components.base.ConcurrencyDropdown
+import com.lonx.lyrico.ui.components.base.TimeoutScaleDropdown
 import com.lonx.lyrico.viewmodel.BatchMatchType
 import com.moriafly.salt.ui.enabledAlpha
 import com.moriafly.salt.ui.icons.Check
@@ -191,6 +192,11 @@ fun BatchMatchConfigBottomSheet(
                             value = config.concurrency,
                             onChange = { config = config.copy(concurrency = it) },
                         )
+                        TimeoutScaleDropdown(
+                            title = stringResource(R.string.batch_match_config_timeout_scale),
+                            value = config.timeoutScale,
+                            onChange = { config = config.copy(timeoutScale = it) },
+                        )
                     }
                     com.moriafly.salt.ui.ItemOuterTip(
                         text = stringResource(R.string.search_limit_tip)
@@ -308,6 +314,11 @@ fun BatchMatchConfigBottomSheet(
                         summary = stringResource(R.string.search_limit_tip),
                         value = config.concurrency,
                         onChange = { config = config.copy(concurrency = it) },
+                    )
+                    TimeoutScaleDropdown(
+                        title = stringResource(R.string.batch_match_config_timeout_scale),
+                        value = config.timeoutScale,
+                        onChange = { config = config.copy(timeoutScale = it) },
                     )
                 }
             }

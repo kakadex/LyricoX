@@ -48,6 +48,7 @@ import com.lonx.lyrico.ui.theme.LocalUiEngine
 import com.lonx.lyrico.utils.DuplicateDetector
 import com.lonx.lyrico.utils.DuplicateGroup
 import com.lonx.lyrico.utils.DuplicateItem
+import com.lonx.lyrico.viewmodel.DuplicateScanMode
 import com.lonx.lyrico.viewmodel.DuplicateScanUiState
 import com.lonx.lyrico.viewmodel.DuplicateScanViewModel
 import com.moriafly.salt.ui.SaltTheme
@@ -186,6 +187,11 @@ fun DuplicateScanScreen(
                     else scaffoldTopHorizontalPadding(paddingValues)
                 )
         ) {
+            DuplicateModeToggle(
+                mode = state.mode,
+                salt = salt,
+                onModeChange = viewModel::setMode
+            )
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -296,6 +302,49 @@ private fun DuplicateGroupCard(
                     onToggle = { onToggle(item.id) }
                 )
             }
+        }
+    }
+}
+
+/** 查重模式切换：按文件名（相似度）或按内容（采样指纹一致）。 */
+@Composable
+private fun DuplicateModeToggle(
+    mode: DuplicateScanMode,
+    salt: Boolean,
+    onModeChange: (DuplicateScanMode) -> Unit
+) {
+    val filenameLabel = stringResource(R.string.duplicate_scan_mode_filename)
+    val contentLabelRes = stringResource(R.string.duplicate_scan_mode_content)
+    val filenameText = if (mode == DuplicateScanMode.FILENAME) "✓ $filenameLabel" else filenameLabel
+    val contentText = if (mode == DuplicateScanMode.CONTENT) "✓ $contentLabelRes" else contentLabelRes
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        if (salt) {
+            com.moriafly.salt.ui.Button(
+                onClick = { onModeChange(DuplicateScanMode.FILENAME) },
+                text = filenameText,
+                modifier = Modifier.weight(1f)
+            )
+            com.moriafly.salt.ui.Button(
+                onClick = { onModeChange(DuplicateScanMode.CONTENT) },
+                text = contentText,
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            TextButton2(
+                text = filenameText,
+                onClick = { onModeChange(DuplicateScanMode.FILENAME) },
+                modifier = Modifier.weight(1f),
+                primary = mode == DuplicateScanMode.FILENAME
+            )
+            TextButton2(
+                text = contentText,
+                onClick = { onModeChange(DuplicateScanMode.CONTENT) },
+                modifier = Modifier.weight(1f),
+                primary = mode == DuplicateScanMode.CONTENT
+            )
         }
     }
 }

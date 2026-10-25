@@ -258,6 +258,10 @@ open class MainActivity : AppCompatActivity(), ExternalAudioEditHost {
                 handleExternalUri(intent.data, intent.flags)
             }
 
+            Intent.ACTION_EDIT -> {
+                handleExternalUri(intent.data, intent.flags)
+            }
+
             Intent.ACTION_SEND -> {
                 handleExternalUri(
                     intent.getParcelableExtra(Intent.EXTRA_STREAM),

@@ -68,6 +68,7 @@ import com.lonx.lyrico.utils.UriUtils
 import com.moriafly.salt.ui.SaltTheme
 import com.lonx.lyrico.viewmodel.SongListViewModel
 import com.lonx.lyrico.viewmodel.SongSelectionViewModel
+import com.lonx.lyrico.viewmodel.SongHealthFilter
 import com.lonx.lyrico.viewmodel.SortBy
 import com.lonx.lyrico.viewmodel.SortInfo
 import com.lonx.lyrico.viewmodel.SortOrder
@@ -107,6 +108,7 @@ fun SongsPage(
 
     val sortInfo by viewModel.sortInfo.collectAsState()
     val songs by viewModel.songs.collectAsState()
+    val healthFilter by viewModel.healthFilter.collectAsState()
     val isSelectionMode by selectionViewModel.isSelectionMode.collectAsState(initial = false)
     val selectedSongUris by selectionViewModel.selectedSongUris.collectAsState()
     val allSongsSelected = songs.isNotEmpty() && selectedSongUris.containsAll(songs.map { it.uri })
@@ -362,7 +364,23 @@ fun SongsPage(
                 ) {
                     viewModel.onSortChange(SortInfo(sortBy, if (selected && sortInfo.order == SortOrder.ASC) SortOrder.DESC else SortOrder.ASC))
                 }
-            }, content = pageContent,
+            } + listOf(
+                LibraryMenuAction(
+                    title = stringResource(R.string.songs_filter_all),
+                    selected = healthFilter == SongHealthFilter.ALL,
+                    summary = null,
+                ) { viewModel.onHealthFilterChange(SongHealthFilter.ALL) },
+                LibraryMenuAction(
+                    title = stringResource(R.string.songs_filter_no_lyrics),
+                    selected = healthFilter == SongHealthFilter.NO_LYRICS,
+                    summary = null,
+                ) { viewModel.onHealthFilterChange(SongHealthFilter.NO_LYRICS) },
+                LibraryMenuAction(
+                    title = stringResource(R.string.songs_filter_no_tags),
+                    selected = healthFilter == SongHealthFilter.NO_TAGS,
+                    summary = null,
+                ) { viewModel.onHealthFilterChange(SongHealthFilter.NO_TAGS) },
+            ), content = pageContent,
         )
     } else Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -444,6 +462,11 @@ fun SongsPage(
                                         )
                                     }
                                     val sortTypes = SortBy.entries.toList()
+                                    val healthEntries = listOf(
+                                        SongHealthFilter.ALL to stringResource(R.string.songs_filter_all),
+                                        SongHealthFilter.NO_LYRICS to stringResource(R.string.songs_filter_no_lyrics),
+                                        SongHealthFilter.NO_TAGS to stringResource(R.string.songs_filter_no_tags),
+                                    )
                                     val sortEntries = DropdownEntry(
                                         items = sortTypes.mapIndexed { _, sortBy ->
                                             val isSelected = sortInfo.sortBy == sortBy
@@ -473,6 +496,13 @@ fun SongsPage(
                                                         )
                                                     )
                                                 }
+                                            )
+                                        } + healthEntries.map { (filter, label) ->
+                                            DropdownItem(
+                                                text = label,
+                                                selected = healthFilter == filter,
+                                                summary = null,
+                                                onClick = { viewModel.onHealthFilterChange(filter) }
                                             )
                                         }
                                     )

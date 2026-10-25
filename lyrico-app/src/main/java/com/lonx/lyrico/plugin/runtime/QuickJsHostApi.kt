@@ -36,6 +36,7 @@ class QuickJsHostApi(
     private val pluginId: String = "default",
     private val cacheRootDir: File? = null,
     private val pluginStrings: com.lonx.lyrico.plugin.i18n.PluginStrings? = null,
+    private val networkTuning: NetworkTuning? = null,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -43,6 +44,9 @@ class QuickJsHostApi(
     }
 ) {
     private var stringsSnapshot: com.lonx.lyrico.plugin.i18n.PluginStrings.Snapshot? = null
+
+    private val timeoutScale: Float
+        get() = (networkTuning?.timeoutScale ?: 1f).coerceIn(0.5f, 3f)
 
     fun beginInvocation() {
         stringsSnapshot = pluginStrings?.snapshot(com.lonx.lyrico.plugin.i18n.PluginLocales.preferences.value)
@@ -458,8 +462,17 @@ class QuickJsHostApi(
         val client = okHttpClient.newBuilder()
             .followRedirects(payload.booleanOrNull("followRedirects") ?: true)
             .followSslRedirects(payload.booleanOrNull("followRedirects") ?: true)
-            .connectTimeout((payload.intOrNull("connectTimeoutMs") ?: 8_000).toLong(), TimeUnit.MILLISECONDS)
-            .readTimeout((payload.intOrNull("readTimeoutMs") ?: 12_000).toLong(), TimeUnit.MILLISECONDS)
+            // 超时倍率作用于显式传入与默认值两者，弱网整体放大；下限 1s 防止误设 0
+            .connectTimeout(
+                ((payload.intOrNull("connectTimeoutMs") ?: 8_000) * timeoutScale)
+                    .toLong().coerceAtLeast(1_000),
+                TimeUnit.MILLISECONDS
+            )
+            .readTimeout(
+                ((payload.intOrNull("readTimeoutMs") ?: 12_000) * timeoutScale)
+                    .toLong().coerceAtLeast(1_000),
+                TimeUnit.MILLISECONDS
+            )
             .build()
 
         return client.newCall(requestBuilder.build()).execute().use { response ->
