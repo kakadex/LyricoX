@@ -113,6 +113,11 @@ class SongFileRepositoryImpl(
                 DeleteSongFileResult.Failed(e)
             }
         } catch (e: Exception) {
+            // 系统确认框刚删掉的行再来删一次，个别 ROM 会抛非 FileNotFoundException 的异常；
+            // 文件/行已经不存在就该归为「已不存在」，否则库表清理被跳过、列表删不干净
+            if (fileAccess.isUriMissing(song.uri.toUri())) {
+                return DeleteSongFileResult.AlreadyMissing
+            }
             fileAccess.writePermissionFromThrowable(song.uri, e)?.let {
                 return DeleteSongFileResult.PermissionRequired(it)
             }

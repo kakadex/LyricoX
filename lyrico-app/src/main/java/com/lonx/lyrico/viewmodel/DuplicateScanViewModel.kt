@@ -37,8 +37,13 @@ class DuplicateScanViewModel(
     private val _uiState = MutableStateFlow(DuplicateScanUiState())
     val uiState: StateFlow<DuplicateScanUiState> = _uiState.asStateFlow()
 
-    /** 扫描整个曲库，按文件名找出重复分组，默认勾选「除建议保留外的所有重复项」。 */
-    fun scan() {
+    /**
+     * 扫描整个曲库，按文件名找出重复分组，默认勾选「除建议保留外的所有重复项」。
+     *
+     * [resetSelection] 传 false 用于删除后的刷新：保留用户勾选里仍出现在分组中的项，
+     * 已删掉的文件不再成组、勾选自然掉出；整体重置会把勾选打回默认值。
+     */
+    fun scan(resetSelection: Boolean = true) {
         if (_uiState.value.scanning) return
         viewModelScope.launch {
             _uiState.update { it.copy(scanning = true) }
@@ -60,12 +65,18 @@ class DuplicateScanViewModel(
                 }
                 groups to selected
             }
-            _uiState.update {
-                it.copy(
+            _uiState.update { state ->
+                state.copy(
                     scanning = false,
                     scannedCount = songs.size,
                     groups = groups,
-                    selectedForDeletion = selected
+                    selectedForDeletion = if (resetSelection) {
+                        selected
+                    } else {
+                        state.selectedForDeletion.filter { id ->
+                            groups.any { group -> group.files.any { file -> file.id == id } }
+                        }.toSet()
+                    }
                 )
             }
         }
@@ -118,7 +129,9 @@ class DuplicateScanViewModel(
             _uiState.update { it.copy(deleting = false, permissionIntentSender = sender) }
             return
         }
-        _uiState.update { it.copy(deleting = false, selectedForDeletion = emptySet()) }
-        scan()
+        _uiState.update { it.copy(deleting = false) }
+        // 刷新分组但保留用户勾选：已删掉的文件不再成组、勾选自然掉出；
+        // 删除失败的（文件仍在）保留勾选，用户可直接重试
+        scan(resetSelection = false)
     }
 }
